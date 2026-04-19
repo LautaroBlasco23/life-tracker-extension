@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Screen Time Tracker</title>
+    <style>
+      body { font-family: sans-serif; width: 280px; padding: 12px; }
+      input { width: 100%; margin: 4px 0; padding: 6px; box-sizing: border-box; }
+      button { width: 100%; padding: 8px; margin-top: 8px; cursor: pointer; }
+      #stats { margin-top: 12px; }
+      .stat-row { display: flex; justify-content: space-between; padding: 4px 0; }
+    </style>
+  </head>
+  <body>
+    <div id="login-section">
+      <h3>Login</h3>
+      <input type="email" id="email" placeholder="Email" />
+      <input type="password" id="password" placeholder="Password" />
+      <button id="login-btn">Login</button>
+      <p id="login-error" style="color:red;font-size:12px"></p>
+    </div>
+    <div id="stats-section" style="display:none">
+      <h3>Today's Visits</h3>
+      <div id="stats"></div>
+      <button id="logout-btn">Logout</button>
+    </div>
+    <script src="popup.js" type="module"></script>
+  </body>
+</html>

@@ -1,4 +1,4 @@
-export const TRACKED_DOMAINS = [
+export const DEFAULT_TRACKED_DOMAINS = [
   "instagram.com",
   "twitter.com",
   "x.com",
@@ -6,4 +6,4 @@ export const TRACKED_DOMAINS = [
   "reddit.com",
 ];
 
-export const API_BASE = "http://localhost:8080/api";
+export const DEFAULT_API_BASE = "http://localhost:8080/api";

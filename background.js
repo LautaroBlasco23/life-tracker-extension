@@ -1,12 +1,16 @@
-import { DEFAULT_TRACKED_DOMAINS, DEFAULT_API_BASE } from "./config.js";
+import { DEFAULT_TRACKED_DOMAINS, DEFAULT_API_HOST } from "./config.js";
+
+function buildApiUrl(host) {
+  return `http://${host}/api`;
+}
 
 chrome.runtime.onInstalled.addListener(async () => {
-  const existing = await chrome.storage.local.get(["trackedDomains", "apiBase"]);
+  const existing = await chrome.storage.local.get(["trackedDomains", "apiHost"]);
   if (!existing.trackedDomains) {
     await chrome.storage.local.set({ trackedDomains: DEFAULT_TRACKED_DOMAINS });
   }
-  if (!existing.apiBase) {
-    await chrome.storage.local.set({ apiBase: DEFAULT_API_BASE });
+  if (!existing.apiHost) {
+    await chrome.storage.local.set({ apiHost: DEFAULT_API_HOST });
   }
 });
 
@@ -20,14 +24,15 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
     return;
   }
 
-  const { trackedDomains, apiBase, token } = await chrome.storage.local.get([
+  const { trackedDomains, apiHost, token } = await chrome.storage.local.get([
     "trackedDomains",
-    "apiBase",
+    "apiHost",
     "token",
   ]);
 
   const domains = trackedDomains || DEFAULT_TRACKED_DOMAINS;
-  const base = apiBase || DEFAULT_API_BASE;
+  const host = apiHost || DEFAULT_API_HOST;
+  const base = buildApiUrl(host);
 
   const matched = domains.find((d) => url.hostname.endsWith(d));
   if (!matched) return;

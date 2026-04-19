@@ -1,8 +1,17 @@
-import { DEFAULT_TRACKED_DOMAINS, DEFAULT_API_BASE } from "./config.js";
+import { DEFAULT_TRACKED_DOMAINS, DEFAULT_API_HOST } from "./config.js";
+
+function buildApiUrl(host) {
+  return `http://${host}/api`;
+}
+
+async function getApiHost() {
+  const { apiHost } = await chrome.storage.local.get("apiHost");
+  return apiHost || DEFAULT_API_HOST;
+}
 
 async function getApiBase() {
-  const { apiBase } = await chrome.storage.local.get("apiBase");
-  return apiBase || DEFAULT_API_BASE;
+  const host = await getApiHost();
+  return buildApiUrl(host);
 }
 
 async function getTrackedDomains() {
@@ -15,6 +24,29 @@ function showMsg(id, text, type) {
   el.textContent = text;
   el.className = `msg ${type}`;
   setTimeout(() => (el.textContent = ""), 2500);
+}
+
+function showLoginMsg(text, type) {
+  const el = document.getElementById("login-msg");
+  el.textContent = text;
+  el.className = `login-msg show ${type}`;
+}
+
+function clearLoginMsg() {
+  const el = document.getElementById("login-msg");
+  el.textContent = "";
+  el.className = "login-msg";
+}
+
+function setLoginLoading(loading) {
+  const btn = document.getElementById("login-btn");
+  if (loading) {
+    btn.classList.add("btn-loading");
+    btn.disabled = true;
+  } else {
+    btn.classList.remove("btn-loading");
+    btn.disabled = false;
+  }
 }
 
 async function renderStats(token) {
@@ -110,27 +142,39 @@ function setupTabs() {
   });
 }
 
-function showApp(token) {
+async function showApp(token) {
   document.getElementById("login-section").style.display = "none";
   document.getElementById("app-section").style.display = "block";
   setupTabs();
   renderStats(token);
   renderTrackBanner();
   renderDomainsList();
-  getApiBase().then((url) => (document.getElementById("api-url").value = url));
+  const host = await getApiHost();
+  document.getElementById("current-api-host").textContent = host;
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
   const { token } = await chrome.storage.local.get("token");
   if (token) {
-    showApp(token);
+    await showApp(token);
+  } else {
+    const host = await getApiHost();
+    document.getElementById("api-host").value = host;
   }
 
-  document.getElementById("login-btn").addEventListener("click", async () => {
+  async function handleLogin() {
     const email = document.getElementById("email").value;
     const password = document.getElementById("password").value;
-    const apiBase = await getApiBase();
-    const errEl = document.getElementById("login-error");
+    const host = document.getElementById("api-host").value.trim() || DEFAULT_API_HOST;
+    const apiBase = buildApiUrl(host);
+
+    if (!email || !password) {
+      showLoginMsg("Please enter both email and password", "err");
+      return;
+    }
+
+    clearLoginMsg();
+    setLoginLoading(true);
 
     try {
       const res = await fetch(`${apiBase}/auth/login`, {
@@ -140,22 +184,48 @@ document.addEventListener("DOMContentLoaded", async () => {
       });
 
       if (!res.ok) {
-        errEl.textContent = "Invalid credentials";
+        if (res.status === 401) {
+          showLoginMsg("Invalid email or password. Please try again.", "err");
+        } else if (res.status === 404) {
+          showLoginMsg("Login endpoint not found. Check your backend URL.", "err");
+        } else {
+          showLoginMsg(`Login failed (Error ${res.status}). Please try again.`, "err");
+        }
+        setLoginLoading(false);
         return;
       }
 
       const json = await res.json();
       const accessToken = json.data?.accessToken;
       if (!accessToken) {
-        errEl.textContent = "Login failed";
+        showLoginMsg("Login failed. No access token received from server.", "err");
+        setLoginLoading(false);
         return;
       }
 
-      await chrome.storage.local.set({ token: accessToken });
-      errEl.textContent = "";
-      showApp(accessToken);
-    } catch {
-      errEl.textContent = "Could not reach server";
+      await chrome.storage.local.set({ token: accessToken, apiHost: host });
+      showLoginMsg("Login successful! Loading your data...", "ok");
+      setTimeout(async () => {
+        clearLoginMsg();
+        setLoginLoading(false);
+        await showApp(accessToken);
+      }, 800);
+    } catch (err) {
+      if (err.name === "TypeError" && err.message.includes("fetch")) {
+        showLoginMsg("Cannot connect to server. Check your backend URL and try again.", "err");
+      } else {
+        showLoginMsg("Network error. Please check your connection and try again.", "err");
+      }
+      setLoginLoading(false);
+    }
+  }
+
+  document.getElementById("login-btn").addEventListener("click", handleLogin);
+
+  document.getElementById("login-section").addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && document.getElementById("login-section").style.display !== "none") {
+      e.preventDefault();
+      handleLogin();
     }
   });
 
@@ -163,6 +233,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     await chrome.storage.local.remove("token");
     document.getElementById("app-section").style.display = "none";
     document.getElementById("login-section").style.display = "block";
+    document.getElementById("email").value = "";
+    document.getElementById("password").value = "";
+    const host = await getApiHost();
+    document.getElementById("api-host").value = host;
+    showLoginMsg("You have been logged out successfully.", "ok");
   });
 
   document.getElementById("add-domain-btn").addEventListener("click", async () => {
@@ -183,9 +258,11 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   document.getElementById("save-settings-btn").addEventListener("click", async () => {
-    const url = document.getElementById("api-url").value.trim().replace(/\/$/, "");
-    if (!url) return;
-    await chrome.storage.local.set({ apiBase: url });
-    showMsg("settings-msg", "Saved.", "ok");
+    document.getElementById("app-section").style.display = "none";
+    document.getElementById("login-section").style.display = "block";
+    const host = await getApiHost();
+    document.getElementById("api-host").value = host;
+    clearLoginMsg();
+    showLoginMsg("You can now edit the backend URL below.", "ok");
   });
 });

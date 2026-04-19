@@ -6,4 +6,4 @@ export const DEFAULT_TRACKED_DOMAINS = [
   "reddit.com",
 ];
 
-export const DEFAULT_API_BASE = "http://localhost:8080/api";
+export const DEFAULT_API_HOST = "localhost:8080";

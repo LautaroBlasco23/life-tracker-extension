@@ -34,20 +34,47 @@
 
       .full-btn { width: 100%; padding: 8px; margin-top: 8px; }
 
-      .msg { font-size: 12px; margin-top: 6px; min-height: 16px; }
-      .msg.ok { color: #2e7d32; }
-      .msg.err { color: #c62828; }
+      .msg { font-size: 12px; margin-top: 6px; min-height: 16px; padding: 6px 8px; border-radius: 4px; }
+      .msg.ok { color: #2e7d32; background: #e8f5e9; }
+      .msg.err { color: #c62828; background: #ffebee; }
 
-      #login-error { color: #c62828; font-size: 12px; min-height: 16px; }
+      .login-msg { font-size: 12px; margin-top: 8px; padding: 8px; border-radius: 4px; display: none; }
+      .login-msg.show { display: block; }
+      .login-msg.ok { color: #2e7d32; background: #e8f5e9; }
+      .login-msg.err { color: #c62828; background: #ffebee; }
+
+      .btn-loading {
+        position: relative;
+        color: transparent !important;
+      }
+      .btn-loading::after {
+        content: "";
+        position: absolute;
+        width: 16px;
+        height: 16px;
+        top: 50%;
+        left: 50%;
+        margin-left: -8px;
+        margin-top: -8px;
+        border: 2px solid #fff;
+        border-radius: 50%;
+        border-top-color: transparent;
+        animation: spin 0.8s linear infinite;
+      }
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
     </style>
   </head>
   <body>
     <div id="login-section">
       <h3>Login</h3>
+      <label class="setting-label" for="api-host">Backend URL</label>
+      <input type="text" id="api-host" placeholder="localhost:8080" style="margin-bottom:10px" />
       <input type="email" id="email" placeholder="Email" style="margin-bottom:6px" />
       <input type="password" id="password" placeholder="Password" style="margin-bottom:6px" />
       <button class="full-btn" id="login-btn" style="margin-top:0">Login</button>
-      <p id="login-error"></p>
+      <div id="login-msg" class="login-msg"></div>
     </div>
 
     <div id="app-section" style="display:none">
@@ -80,10 +107,10 @@
       <div id="tab-settings" class="tab-content">
         <h4>Settings</h4>
         <div class="setting-row">
-          <label class="setting-label" for="api-url">API URL</label>
-          <input type="text" id="api-url" placeholder="http://localhost:8080/api" />
+          <label class="setting-label">Backend URL</label>
+          <div id="current-api-host" style="font-size:13px;padding:6px;background:#f5f5f5;border-radius:4px;"></div>
         </div>
-        <button class="full-btn" id="save-settings-btn" style="margin-top:0">Save</button>
+        <button class="full-btn" id="save-settings-btn" style="margin-top:0">Edit Backend URL</button>
         <p class="msg" id="settings-msg"></p>
       </div>
     </div>
